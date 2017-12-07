@@ -1,0 +1,312 @@
+#%RAML 0.8
+title: coursecatalog
+baseUri: https://mit-public.cloudhub.io/coursecatalog/v2
+mediaType: application/json
+traits:
+  - client-id-required:
+      headers:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+schemas:
+- invalid_client_secret: |
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "error",
+        "description"
+      ]
+    }  
+- subject: |
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "termCode": {
+                "type": "string"
+              },
+              "subjectId": {
+                "type": "string"
+              },
+              "academicYear": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "prerequisites": {
+                "type": "string"
+              },
+              "units": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "instructors": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "termCode",
+              "subjectId",
+              "academicYear",
+              "title",
+              "prerequisites",
+              "units",
+              "optional",
+              "description",
+              "instructors"
+            ]
+          }
+        }
+      },
+      "required": [
+        "item"
+      ]
+    }
+
+
+- subjects: |
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "description": "course subject",
+      "required": ["role", "qualifier", "priority"],
+      "properties": {
+        "termCode": { 
+          "description": "term code such as 2015SP, 2015JA, 2015SU, 2015FA",
+          "type": "string", 
+          "required": true
+        },
+        "subjectId": { 
+          "description": "subject Id such as 8.01",
+          "type": "string", 
+          "required": true
+        },
+        "academicYear": { 
+          "description": "2015",
+          "type": "string", 
+          "required": true
+        },
+        "title": { 
+          "description": "title of subject",
+          "type": "string", 
+          "required": true
+        },
+        "cluster": { 
+          "description": "cluster of subject",
+          "type": "string", 
+          "required": false
+        },
+        "prerequisites": { 
+          "description": "pre-requirements",
+          "type": "string", 
+          "required": true
+        },
+        "units": { 
+          "description": "subject 3-0-9",
+          "type": "string", 
+          "required": true
+        },
+        "optional": { 
+          "description": "optional text, such as credit can not received",
+          "type": "string", 
+          "required": false
+        },
+        "description": { 
+          "description": "description of subject",
+          "type": "string", 
+          "required": false
+        },  
+        "instructors": { 
+          "description": "instructor's info",
+          "type": "string", 
+          "required": false
+        }     
+      }
+    }
+
+/terms/{term}/subjects:
+  is: [client-id-required] 
+  description: Returns information about subjects at MIT.
+  uriParameters:
+    term:
+      description: The term such as 2015SP, 2015JA, 2015SU, 2015FA
+      minLength: 6
+      maxLength: 6
+      type: string
+  get: 
+
+    queryParameters:
+      dept:
+        type: string
+        description: department number such as 8
+        required: false
+    
+    responses: 
+      200:
+        description: |
+          Success
+        body:
+          application/json:
+            schema: subject
+            example: |
+               { "metadata" :
+                  { "size" : "2" }
+               }
+               {
+                  "items" : 
+                    [
+                      {
+                      "termCode": "2015SP",
+                      "subjectId": "8.370",
+                      "academicYear": "2015",
+                      "title": "Quantum Computation",
+                      "cluster": "(Same subject as 2.111J, 18.435J)",
+                      "prerequisites": "Permission of instructor",
+                      "units": "3-0-9",
+                      "description": "See description under subject 18.435J.",
+                      "instructors": "I. Chuang, E. Farhi, S. Lloyd, P. Shor"
+                      }
+                      {
+                      "termCode": "2015SP",
+                      "subjectId": "8.S301",
+                      "academicYear": "2015",
+                      "title": "Special Subject: Physics",
+                      "prerequisites": "Permission of instructor",
+                      "units": "Units arranged",
+                      "description": "Covers topics in Physics that are not offered in the regular curriculum. Limited enrollment; preference to Physics graduate students.",
+                      "instructors": "A. Lightman"
+                      }
+                    ]
+                }
+       
+      400:
+        description: |
+            Bad Request
+        body:
+          application/json:
+            example: |
+                  {  
+                    "errorCode": 400,
+                    "errorMessage": "Bad Request",
+                    "errorDetails": [
+                      { "message":         "subject id is not valid"}    
+                    ]
+                  }
+      403:
+        body:
+          application/json:
+            schema: invalid_client_secret
+            example: | 
+              { 
+                "error": "invalid_client",
+                "description": "wrong client_id or client_secret"
+              }    
+      404:
+        body:
+          application/json:
+            schema: invalid_client_secret
+            example: |          
+              {
+                "items": "no authorizations found"
+              }                    
+              
+                
+                          
+/terms/{term}/subjects/{subjectId}:
+  is: [client-id-required]  
+  description: Returns an MIT subject based on a subject id
+  uriParameters:
+    term:
+      description: The term such as 2015SP, 2015JA, 2015SU, 2015FA
+      minLength: 6
+      maxLength: 6
+      type: string
+    subjectId:
+      description: The subject ID such as 8.01
+      maxLength: 8
+      type: string 
+  get:
+ 
+    responses:
+      200:
+        body:
+          application/json:
+            schema: subject
+            example: |
+              {
+                "item": [
+                  {
+                     "termCode": "2015SP",
+                     "subjectId": "8.01",
+                     "academicYear": "2015",
+                     "title": "Physics I",
+                     "prerequisites": "None",
+                     "units": "3-2-7 PHYSICS I",
+                     "optional": "Credit cannot also be received for 8.011, 8.012, 8.01L, CC.801, CC.8012, ES.801, ES.8012",
+                     "description": "Introduces classical mechanics. Space and time: straight-line kinematics; motion in a plane; forces and static equilibrium; particle dynamics, with force and conservation of momentum; relative inertial frames and non-inertial force; work, potential energy and conservation of energy; kinetic theory and the ideal gas; rigid bodies and rotational dynamics; vibrational motion; conservation of angular momentum; central force motions; fluid mechanics.  Subject taught using the TEAL (Technology-Enabled Active Learning) format which features students working in groups of three, discussing concepts, solving problems, and doing table-top experiments with the aid of computer data acquisition and analysis.",
+                     "instructors": "D. Chakrabarty, P. Dourmashkin"
+                  }
+                ]
+              }
+       
+      400:
+        description: |
+            Bad Request
+        body:
+          application/json:
+            example: |
+                  {  
+                    "errorCode": 400,
+                    "errorMessage": "Bad Request",
+                    "errorDetails": [
+                      { "message":         "subject id is not valid"}    
+                    ]
+                  }
+
+      403:
+        body:
+          application/json:
+            schema: invalid_client_secret
+            example: | 
+              { 
+                "error": "invalid_client",
+                "description": "wrong client_id or client_secret"
+              }    
+      404:
+        body:
+          application/json:
+            schema: invalid_client_secret
+            example: |          
+              {
+                "items": "no authorizations found"
+              }      
+
+  
+              
+              
+              
+              
+              
+              
+              
